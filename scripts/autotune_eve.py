@@ -67,8 +67,11 @@ def ensure_datasets(min_shards: int = 16) -> None:
     if len(shards) >= min_shards:
         return
     print(f"[autotune] Dataset shards missing ({len(shards)} found). Downloading {min_shards} shards...")
+    uv = shutil.which("uv")
+    if uv is None:
+        raise RuntimeError("uv executable not found. Please install uv before running autotune.")
     subprocess.run(
-        [sys.executable, "-m", "nanochat.dataset", "-n", str(min_shards)],
+        [uv, "run", "python", "-m", "nanochat.dataset", "-n", str(min_shards)],
         cwd=REPO_ROOT,
         check=True,
     )
