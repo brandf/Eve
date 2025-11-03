@@ -24,3 +24,12 @@ Thumbs.db
 
 # Ignore symlinked project directories (if using the master-vault feature)
 obsidian/🚧 Projects/*
+
+# nanochat artifacts
+.venv/
+__pycache__/
+*.pyc
+rustbpe/target/
+dev-ignore/
+report.md
+eval_bundle/
