@@ -66,10 +66,15 @@ def ensure_datasets(min_shards: int = 16) -> None:
     shards = list(data_dir.glob("shard_*.parquet")) if data_dir.exists() else []
     if len(shards) >= min_shards:
         return
-    raise RuntimeError(
-        f"Dataset shards missing ({len(shards)} found). "
-        "Run `python -m nanochat.dataset -n 16` from the repo once to download the base data."
-    )
+    print(f"[autotune] Dataset shards missing ({len(shards)} found). Bootstrapping environment and downloading {min_shards} shards...")
+    venv_activate = REPO_ROOT / ".venv" / "bin" / "activate"
+    if not venv_activate.exists():
+        uv = shutil.which("uv")
+        if uv is None:
+            raise RuntimeError("uv executable not found. Please install uv before running autotune.")
+        subprocess.run([uv, "sync", "--extra", "gpu"], cwd=REPO_ROOT, check=True)
+    cmd = f". {venv_activate} && python -m nanochat.dataset -n {min_shards}"
+    subprocess.run(["bash", "-lc", cmd], cwd=REPO_ROOT, check=True)
 
 
 def run_trial(
