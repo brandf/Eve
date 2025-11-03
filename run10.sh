@@ -5,6 +5,28 @@
 
 set -euo pipefail
 
+PROFILE="${1:-h100}"
+if [ "$PROFILE" = "rtx5090" ]; then
+  shift
+elif [ "$PROFILE" != "h100" ]; then
+  echo "Unknown profile: $PROFILE" >&2
+  echo "Supported profiles: h100 (default), rtx5090" >&2
+  exit 1
+fi
+
+SEQ_LEN=2048
+DEVICE_BATCH=24
+TOTAL_BATCH=49_152
+
+if [ "$PROFILE" = "rtx5090" ]; then
+  DEVICE_BATCH=12           # halve per-step tokens to fit 32GB
+  TOTAL_BATCH=49_152        # two microsteps => same effective batch, keeps 20x tokens/param
+fi
+
+echo "Running run10 profile: $PROFILE"
+echo "  device_batch_size = $DEVICE_BATCH"
+echo "  total_batch_size  = $TOTAL_BATCH"
+
 export OMP_NUM_THREADS=1
 export NANOCHAT_BASE_DIR="${NANOCHAT_BASE_DIR:-$HOME/.cache/nanochat}"
 mkdir -p "$NANOCHAT_BASE_DIR"
@@ -39,8 +61,8 @@ wait "$DATASET_DOWNLOAD_PID"
 # Base pretraining (depth-12, 1 GPU)
 torchrun --standalone --nproc_per_node=1 -m scripts.base_train -- \
     --depth=12 \
-    --device_batch_size=24 \
-    --total_batch_size=49_152 \
+    --device_batch_size="$DEVICE_BATCH" \
+    --total_batch_size="$TOTAL_BATCH" \
     --num_iterations=75_500 \
     --eval_tokens=32_768 \
     --core_metric_every=-1 \
