@@ -31,6 +31,11 @@ class GPTConfig:
     n_head: int = 6 # number of query heads
     n_kv_head: int = 6 # number of key/value heads (MQA)
     n_embd: int = 768
+    use_eve: bool = False
+    eve_beta1: float = 0.9
+    eve_beta2: float = 0.999
+    eve_eta: float = 1.0
+    eve_eps: float = 1e-8
 
 
 def norm(x):
@@ -255,8 +260,26 @@ class GPT(nn.Module):
         # Forward the trunk of the Transformer
         x = self.transformer.wte(idx)
         x = norm(x)
+        use_eve = self.config.use_eve
+        if use_eve:
+            beta1 = self.config.eve_beta1
+            beta2 = self.config.eve_beta2
+            eta = self.config.eve_eta
+            eps = self.config.eve_eps
+            m = torch.zeros_like(x)
+            v = torch.zeros_like(x)
+            eps_tensor = x.new_tensor(eps)
         for block in self.transformer.h:
-            x = block(x, cos_sin, kv_cache)
+            residual = x
+            updated = block(x, cos_sin, kv_cache)
+            if not use_eve:
+                x = updated
+                continue
+            g = updated - residual
+            m = m.mul(beta1).add(g, alpha=1 - beta1)
+            v = v.mul(beta2).addcmul(g, g, value=1 - beta2)
+            denom = torch.sqrt(v + eps_tensor)
+            x = residual + eta * m / denom
         x = norm(x)
 
         # Forward the lm_head (compute logits)

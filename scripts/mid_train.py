@@ -48,6 +48,11 @@ eval_every = 150 # -1 = disable
 eval_tokens = 20*524288
 total_batch_size = 524288
 dry_run = 0 # dry_run=1 is for experiments: we will log to wandb but we won't write checkpoints or report
+eve = False
+eve_beta1 = 0.9
+eve_beta2 = 0.999
+eve_eta = 1.0
+eve_eps = 1e-8
 config_keys = [k for k,v in globals().items() if not k.startswith('_') and isinstance(v, (int, float, bool, str))]
 exec(open(os.path.join('nanochat', 'configurator.py')).read()) # overrides from command line or config file
 user_config = {k: globals()[k] for k in config_keys} # possibly useful for logging
@@ -68,6 +73,8 @@ wandb_run = DummyWandb() if use_dummy_wandb else wandb.init(project="nanochat-mi
 # Load the model and tokenizer
 model, tokenizer, meta = load_model("base", device, phase="train", model_tag=model_tag, step=step)
 pretrain_batch_size = meta.get("device_batch_size", None)
+if bool(eve) != model.config.use_eve:
+    print0(f"Warning: --eve set to {eve} but loaded checkpoint has use_eve={model.config.use_eve}; proceeding with checkpoint configuration.")
 if pretrain_batch_size is not None and device_batch_size > pretrain_batch_size:
     print0(f"FOOTGUN WARNING: base model training used device_batch_size {pretrain_batch_size}, did you pass in a good --device_batch_size to this script?")
 orig_model = model

@@ -4,6 +4,27 @@
 # Designed to run end-to-end for $1000/24 ~= 41.6 hours on an 8XH100 node
 # A bit sparser on comments, see speedrun.sh for more detail
 
+# optional Eve toggle
+EVE_ENABLED=false
+for arg in "$@"; do
+  case "$arg" in
+    eve)
+      EVE_ENABLED=true
+      ;;
+    *)
+      echo "Unknown option: $arg" >&2
+      echo "Usage: bash run1000.sh [eve]" >&2
+      exit 1
+      ;;
+  esac
+done
+
+EVE_ARGS=()
+if [ "$EVE_ENABLED" = true ]; then
+  EVE_ARGS+=(--eve True)
+  echo "Enabling Eve dynamics for this run"
+fi
+
 # all the setup stuff
 export OMP_NUM_THREADS=1
 export NANOCHAT_BASE_DIR="$HOME/.cache/nanochat"
@@ -70,17 +91,17 @@ python -m scripts.tok_eval
 # which would decrease model performance. Possibly 2, 3 or so epochs is ~ok, but certainly not ideal and at 10+ epochs we'd
 # start to overfit hard.
 # 5) That's it, everything else (e.g. the learning rates) is adjusted automatically by the training script.
-torchrun --standalone --nproc_per_node=8 -m scripts.base_train -- --depth=32 --device_batch_size=8 --run=$WANDB_RUN
+torchrun --standalone --nproc_per_node=8 -m scripts.base_train -- --depth=32 --device_batch_size=8 "${EVE_ARGS[@]}" --run=$WANDB_RUN
 torchrun --standalone --nproc_per_node=8 -m scripts.base_loss
 torchrun --standalone --nproc_per_node=8 -m scripts.base_eval
 
 # midtrain
 # NOTE: ensure that we use the same device_batch_size here as the base training script.
-torchrun --standalone --nproc_per_node=8 -m scripts.mid_train -- --device_batch_size=8 --run=$WANDB_RUN
+torchrun --standalone --nproc_per_node=8 -m scripts.mid_train -- --device_batch_size=8 "${EVE_ARGS[@]}" --run=$WANDB_RUN
 torchrun --standalone --nproc_per_node=8 -m scripts.chat_eval -- -i mid
 
 # sft
-torchrun --standalone --nproc_per_node=8 -m scripts.chat_sft -- --run=$WANDB_RUN
+torchrun --standalone --nproc_per_node=8 -m scripts.chat_sft -- "${EVE_ARGS[@]}" --run=$WANDB_RUN
 torchrun --standalone --nproc_per_node=8 -m scripts.chat_eval -- -i sft
 
 # generate final report

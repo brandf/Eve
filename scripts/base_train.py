@@ -60,6 +60,12 @@ core_metric_max_per_task = 500 # examples per task in estimating the core metric
 sample_every = 2000 # every how many steps to sample from the model
 # Output
 model_tag = "" # optionally override the model tag for the output checkpoint directory name
+# Eve forward dynamics
+eve = False
+eve_beta1 = 0.9
+eve_beta2 = 0.999
+eve_eta = 1.0
+eve_eps = 1e-8
 # now allow CLI to override the settings via the configurator lol
 config_keys = [k for k,v in globals().items() if not k.startswith('_') and isinstance(v, (int, float, bool, str))]
 exec(open(os.path.join('nanochat', 'configurator.py')).read()) # overrides from command line or config file
@@ -106,6 +112,13 @@ print0(f"Total batch size {total_batch_size:,} => gradient accumulation steps: {
 # -----------------------------------------------------------------------------
 # Initialize the Model
 model_config_kwargs = dict(sequence_len=max_seq_len, vocab_size=vocab_size, n_layer=num_layers, n_head=num_heads, n_kv_head=num_kv_heads, n_embd=model_dim)
+model_config_kwargs.update(dict(
+    use_eve=bool(eve),
+    eve_beta1=eve_beta1,
+    eve_beta2=eve_beta2,
+    eve_eta=eve_eta,
+    eve_eps=eve_eps,
+))
 with torch.device("meta"):
     model_config = GPTConfig(**model_config_kwargs)
     model = GPT(model_config)

@@ -55,6 +55,11 @@ eval_every = 100
 eval_steps = 100
 eval_metrics_every = 200
 eval_metrics_max_problems = 1024
+eve = False
+eve_beta1 = 0.9
+eve_beta2 = 0.999
+eve_eta = 1.0
+eve_eps = 1e-8
 # now allow CLI to override the settings via the configurator lol
 config_keys = [k for k,v in globals().items() if not k.startswith('_') and isinstance(v, (int, float, bool, str))]
 exec(open(os.path.join('nanochat', 'configurator.py')).read()) # overrides from command line or config file
@@ -74,6 +79,8 @@ wandb_run = DummyWandb() if use_dummy_wandb else wandb.init(project="nanochat-sf
 
 # Load the model and tokenizer
 model, tokenizer, meta = load_model(source, device, phase="train", model_tag=model_tag, step=step)
+if bool(eve) != model.config.use_eve:
+    print0(f"Warning: --eve set to {eve} but loaded checkpoint has use_eve={model.config.use_eve}; proceeding with checkpoint configuration.")
 orig_model = model # original, uncompiled model
 # model = torch.compile(model, dynamic=True) # doesn't work super well because of variable lengths of inputs
 engine = Engine(model, tokenizer) # will be used for inline model evaluation only

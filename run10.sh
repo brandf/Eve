@@ -5,14 +5,25 @@
 
 set -euo pipefail
 
-PROFILE="${1:-h100}"
-if [ "$PROFILE" = "rtx5090" ]; then
+PROFILE="h100"
+EVE_ENABLED=false
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    h100|rtx5090)
+      PROFILE="$1"
+      ;;
+    eve)
+      EVE_ENABLED=true
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      echo "Usage: bash run10.sh [h100|rtx5090] [eve]" >&2
+      exit 1
+      ;;
+  esac
   shift
-elif [ "$PROFILE" != "h100" ]; then
-  echo "Unknown profile: $PROFILE" >&2
-  echo "Supported profiles: h100 (default), rtx5090" >&2
-  exit 1
-fi
+done
 
 SEQ_LEN=2048
 DEVICE_BATCH=24
@@ -23,9 +34,17 @@ if [ "$PROFILE" = "rtx5090" ]; then
   TOTAL_BATCH=49_152        # two microsteps => same effective batch, keeps 20x tokens/param
 fi
 
+EVE_ARGS=()
+if [ "$EVE_ENABLED" = true ]; then
+  EVE_ARGS+=(--eve True)
+fi
+
 echo "Running run10 profile: $PROFILE"
 echo "  device_batch_size = $DEVICE_BATCH"
 echo "  total_batch_size  = $TOTAL_BATCH"
+if [ "$EVE_ENABLED" = true ]; then
+  echo "  eve dynamics     = enabled"
+fi
 
 export OMP_NUM_THREADS=1
 export NANOCHAT_BASE_DIR="${NANOCHAT_BASE_DIR:-$HOME/.cache/nanochat}"
@@ -67,6 +86,7 @@ torchrun --standalone --nproc_per_node=1 -m scripts.base_train -- \
     --eval_tokens=32_768 \
     --core_metric_every=-1 \
     --sample_every=-1 \
+    "${EVE_ARGS[@]}" \
     --run="$WANDB_RUN"
 
 torchrun --standalone --nproc_per_node=1 -m scripts.base_loss
@@ -77,6 +97,7 @@ curl -L -o "$NANOCHAT_BASE_DIR/identity_conversations.jsonl" https://karpathy-pu
 torchrun --standalone --nproc_per_node=1 -m scripts.mid_train -- \
     --device_batch_size=4 \
     --num_iterations=200 \
+    "${EVE_ARGS[@]}" \
     --run="$WANDB_RUN"
 torchrun --standalone --nproc_per_node=1 -m scripts.chat_eval -- -i mid -a ARC-Easy|ARC-Challenge -x 100
 
@@ -85,6 +106,7 @@ torchrun --standalone --nproc_per_node=1 -m scripts.chat_sft -- \
     --device_batch_size=4 \
     --num_epochs=1 \
     --num_iterations=200 \
+    "${EVE_ARGS[@]}" \
     --run="$WANDB_RUN"
 torchrun --standalone --nproc_per_node=1 -m scripts.chat_eval -- -i sft -a ARC-Easy|ARC-Challenge -x 100
 

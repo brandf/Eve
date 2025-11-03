@@ -10,6 +10,27 @@
 # 3) Example launch with wandb logging, but see below for setting up wandb first:
 # WANDB_RUN=speedrun screen -L -Logfile speedrun.log -S speedrun bash speedrun.sh
 
+# Optional Eve dynamics toggle
+EVE_ENABLED=false
+for arg in "$@"; do
+  case "$arg" in
+    eve)
+      EVE_ENABLED=true
+      ;;
+    *)
+      echo "Unknown option: $arg" >&2
+      echo "Usage: bash speedrun.sh [eve]" >&2
+      exit 1
+      ;;
+  esac
+done
+
+EVE_ARGS=()
+if [ "$EVE_ENABLED" = true ]; then
+  EVE_ARGS+=(--eve True)
+  echo "Enabling Eve dynamics for this run"
+fi
+
 # Default intermediate artifacts directory is in ~/.cache/nanochat
 export OMP_NUM_THREADS=1
 export NANOCHAT_BASE_DIR="$HOME/.cache/nanochat"
@@ -83,7 +104,7 @@ echo "Waiting for dataset download to complete..."
 wait $DATASET_DOWNLOAD_PID
 
 # pretrain the d20 model
-torchrun --standalone --nproc_per_node=8 -m scripts.base_train -- --depth=20 --run=$WANDB_RUN
+torchrun --standalone --nproc_per_node=8 -m scripts.base_train -- --depth=20 "${EVE_ARGS[@]}" --run=$WANDB_RUN
 # evaluate the model on a larger chunk of train/val data and draw some samples
 torchrun --standalone --nproc_per_node=8 -m scripts.base_loss
 # evaluate the model on CORE tasks
@@ -97,14 +118,14 @@ torchrun --standalone --nproc_per_node=8 -m scripts.base_eval
 curl -L -o $NANOCHAT_BASE_DIR/identity_conversations.jsonl https://karpathy-public.s3.us-west-2.amazonaws.com/identity_conversations.jsonl
 
 # run midtraining and eval the model
-torchrun --standalone --nproc_per_node=8 -m scripts.mid_train -- --run=$WANDB_RUN
+torchrun --standalone --nproc_per_node=8 -m scripts.mid_train -- "${EVE_ARGS[@]}" --run=$WANDB_RUN
 torchrun --standalone --nproc_per_node=8 -m scripts.chat_eval -- -i mid
 
 # -----------------------------------------------------------------------------
 # Supervised Finetuning (domain adaptation to each sequence all by itself per row)
 
 # train sft and re-eval right away (should see a small bump)
-torchrun --standalone --nproc_per_node=8 -m scripts.chat_sft -- --run=$WANDB_RUN
+torchrun --standalone --nproc_per_node=8 -m scripts.chat_sft -- "${EVE_ARGS[@]}" --run=$WANDB_RUN
 torchrun --standalone --nproc_per_node=8 -m scripts.chat_eval -- -i sft
 
 # chat with the model over CLI! Leave out the -p to chat interactively
