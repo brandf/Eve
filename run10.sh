@@ -5,6 +5,8 @@
 
 set -euo pipefail
 
+export UV_HTTP_TIMEOUT=600   # seconds
+
 PROFILE="h100"
 EVE_ENABLED=false
 

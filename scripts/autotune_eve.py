@@ -66,14 +66,9 @@ def ensure_datasets(min_shards: int = 16) -> None:
     shards = list(data_dir.glob("shard_*.parquet")) if data_dir.exists() else []
     if len(shards) >= min_shards:
         return
-    print(f"[autotune] Dataset shards missing ({len(shards)} found). Downloading {min_shards} shards...")
-    uv = shutil.which("uv")
-    if uv is None:
-        raise RuntimeError("uv executable not found. Please install uv before running autotune.")
-    subprocess.run(
-        [uv, "run", "python", "-m", "nanochat.dataset", "-n", str(min_shards)],
-        cwd=REPO_ROOT,
-        check=True,
+    raise RuntimeError(
+        f"Dataset shards missing ({len(shards)} found). "
+        "Run `python -m nanochat.dataset -n 16` from the repo once to download the base data."
     )
 
 
