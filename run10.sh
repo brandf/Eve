@@ -9,6 +9,11 @@ export UV_HTTP_TIMEOUT=600   # seconds
 
 PROFILE="h100"
 EVE_ENABLED=false
+OVERRIDE_ITERS=""
+OVERRIDE_EVAL_TOKENS=""
+OVERRIDE_EVE_BETA1=""
+OVERRIDE_EVE_BETA2=""
+OVERRIDE_EVE_ETA=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -18,9 +23,24 @@ while [ $# -gt 0 ]; do
     eve)
       EVE_ENABLED=true
       ;;
+    --iters=*)
+      OVERRIDE_ITERS="${1#*=}"
+      ;;
+    --eval_tokens=*)
+      OVERRIDE_EVAL_TOKENS="${1#*=}"
+      ;;
+    --eve_beta1=*)
+      OVERRIDE_EVE_BETA1="${1#*=}"
+      ;;
+    --eve_beta2=*)
+      OVERRIDE_EVE_BETA2="${1#*=}"
+      ;;
+    --eve_eta=*)
+      OVERRIDE_EVE_ETA="${1#*=}"
+      ;;
     *)
       echo "Unknown option: $1" >&2
-      echo "Usage: bash run10.sh [h100|rtx5090] [eve]" >&2
+      echo "Usage: bash run10.sh [h100|rtx5090] [eve] [--iters=N] [--eval_tokens=N] [--eve_beta1=X] [--eve_beta2=Y] [--eve_eta=Z]" >&2
       exit 1
       ;;
   esac
@@ -39,6 +59,9 @@ fi
 EVE_ARGS=()
 if [ "$EVE_ENABLED" = true ]; then
   EVE_ARGS+=(--eve True)
+  [ -n "$OVERRIDE_EVE_BETA1" ] && EVE_ARGS+=("--eve_beta1=$OVERRIDE_EVE_BETA1")
+  [ -n "$OVERRIDE_EVE_BETA2" ] && EVE_ARGS+=("--eve_beta2=$OVERRIDE_EVE_BETA2")
+  [ -n "$OVERRIDE_EVE_ETA" ] && EVE_ARGS+=("--eve_eta=$OVERRIDE_EVE_ETA")
 fi
 
 echo "Running run10 profile: $PROFILE"
@@ -84,8 +107,8 @@ torchrun --standalone --nproc_per_node=1 -m scripts.base_train -- \
     --depth=12 \
     --device_batch_size="$DEVICE_BATCH" \
     --total_batch_size="$TOTAL_BATCH" \
-    --num_iterations=75_500 \
-    --eval_tokens=32_768 \
+    --num_iterations="${OVERRIDE_ITERS:-75_500}" \
+    --eval_tokens="${OVERRIDE_EVAL_TOKENS:-32_768}" \
     --core_metric_every=-1 \
     --sample_every=-1 \
     "${EVE_ARGS[@]}" \
