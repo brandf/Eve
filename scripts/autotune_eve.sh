@@ -48,7 +48,9 @@ mkdir -p "$REPORT_DIR"
 printf "stage\ttrial\tbeta1\tbeta2\teta\tmin_bpb\titers\treport_path\n" > "$SUMMARY_FILE"
 
 random_float() {
-  python - <<'PY'
+  local lo="$1"
+  local hi="$2"
+  python3 - "$lo" "$hi" <<'PY'
 import random, sys
 lo, hi = map(float, sys.argv[1:3])
 print(f"{random.uniform(lo, hi):.6f}")
@@ -103,18 +105,24 @@ echo "[autotune] Stage 2: refining best candidates."
 best=$(sort -t$'\t' -k6,6 "$SUMMARY_FILE" | head -n $((STAGE2_TRIALS+1)))
 echo "$best" | tail -n +2 | while IFS=$'\t' read -r _ trial beta1 beta2 eta _ _ _; do
   run_trial "stage2" "${trial}a" "$beta1" "$beta2" "$eta" "$STAGE2_ITERS"
-  beta1=$(python - <<PY
-import random
-print({beta1} + random.uniform(-0.01, 0.01))
-PY)
-  beta2=$(python - <<PY
-import random
-print({beta2} + random.uniform(-1e-4, 1e-4))
-PY)
-  eta=$(python - <<PY
-import random
-print({eta} + random.uniform(-0.05, 0.05))
-PY)
+  beta1=$(python3 - "$beta1" <<'PY'
+import random, sys
+base = float(sys.argv[1])
+print(f"{base + random.uniform(-0.01, 0.01):.6f}")
+PY
+)
+  beta2=$(python3 - "$beta2" <<'PY'
+import random, sys
+base = float(sys.argv[1])
+print(f"{base + random.uniform(-1e-4, 1e-4):.6f}")
+PY
+)
+  eta=$(python3 - "$eta" <<'PY'
+import random, sys
+base = float(sys.argv[1])
+print(f"{base + random.uniform(-0.05, 0.05):.6f}")
+PY
+)
   run_trial "stage2" "${trial}b" "$beta1" "$beta2" "$eta" "$STAGE2_ITERS"
 done
 
