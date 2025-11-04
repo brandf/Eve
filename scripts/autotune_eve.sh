@@ -108,7 +108,7 @@ extract_bpb() {
     return
   fi
   local value
-  value=$(grep -m1 -E "Validation bpb" "$source_file" | awk -F ":" '{print $NF+0}')
+  value=$(grep -E "Validation bpb" "$source_file" | tail -n 1 | awk -F ":" '{print $NF+0}')
   if [[ -z "$value" ]]; then
     echo "inf"
   else
