@@ -27,9 +27,9 @@ For the best editing/contributing experience, use the Obsidian client - open the
 
 MIT [License](./LICENSE). 
 
-
-This is a fork of nanochat.
 ---
+
+This is a fork of:
 
 # nanochat
 

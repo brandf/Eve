@@ -48,12 +48,14 @@ while [ $# -gt 0 ]; do
 done
 
 SEQ_LEN=2048
-DEVICE_BATCH=24
-TOTAL_BATCH=49_152
+DEVICE_BATCH=48
+TOTAL_BATCH=98_304
+DEFAULT_ITERS=37_750
 
 if [ "$PROFILE" = "rtx5090" ]; then
-  DEVICE_BATCH=12           # halve per-step tokens to fit 32GB
-  TOTAL_BATCH=49_152        # two microsteps => same effective batch, keeps 20x tokens/param
+  DEVICE_BATCH=24           # tuned for 32GB RTX 5090
+  TOTAL_BATCH=49_152        # single microstep at 24 x 2048 tokens
+  DEFAULT_ITERS=75_500
 fi
 
 EVE_ARGS=()
@@ -107,7 +109,7 @@ torchrun --standalone --nproc_per_node=1 -m scripts.base_train -- \
     --depth=12 \
     --device_batch_size="$DEVICE_BATCH" \
     --total_batch_size="$TOTAL_BATCH" \
-    --num_iterations="${OVERRIDE_ITERS:-75_500}" \
+    --num_iterations="${OVERRIDE_ITERS:-$DEFAULT_ITERS}" \
     --eval_tokens="${OVERRIDE_EVAL_TOKENS:-32_768}" \
     --core_metric_every=-1 \
     --sample_every=-1 \
