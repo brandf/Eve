@@ -234,8 +234,6 @@ for step in range(num_iterations + 1):
     # once in a while: sample from the model (only on master process)
     # use the original uncompiled model because the inputs keep changing shape
     if master_process and (last_step or (step > 0 and step % sample_every == 0)):
-
-    if should_sample:
         model.eval()
         prompts = [
             "The capital of France is",
