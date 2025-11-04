@@ -5,10 +5,10 @@ set -euo pipefail
 
 PROFILE="h100"
 STAGE1_TRIALS=4
-STAGE1_ITERS=500
+STAGE1_ITERS=""
 STAGE2_TRIALS=4
-STAGE2_ITERS=1000
-BASELINE_ITERS=1000
+STAGE2_ITERS=""
+BASELINE_ITERS=""
 EVAL_TOKENS=""
 
 BASE_DIR="$(pwd)"
@@ -56,14 +56,33 @@ mkdir -p "$EVE_DIR" "$BASELINE_DIR"
 printf "stage\ttrial\tbeta1\tbeta2\teta\tmin_bpb\titers\treport_path\n" > "$EVE_SUMMARY"
 printf "stage\ttrial\tbeta1\tbeta2\teta\tmin_bpb\titers\treport_path\n" > "$BASELINE_SUMMARY"
 
-if [[ -z "$EVAL_TOKENS" ]]; then
-  case "$PROFILE" in
-    h100) EVAL_TOKENS=49152;;
-    rtx5090) EVAL_TOKENS=24576;;
-    *) echo "Unsupported profile: $PROFILE"; exit 1;;
-  esac
-  echo "[autotune] Using default eval_tokens=$EVAL_TOKENS for profile $PROFILE"
-fi
+case "$PROFILE" in
+  h100)
+    PROFILE_DEVICE_BATCH=48
+    PROFILE_TOTAL_BATCH=98_304
+    PROFILE_STAGE1_ITERS_DEFAULT=256
+    PROFILE_STAGE2_ITERS_DEFAULT=512
+    PROFILE_BASELINE_ITERS_DEFAULT=256
+    PROFILE_EVAL_TOKENS_DEFAULT=98_304
+    ;;
+  rtx5090)
+    PROFILE_DEVICE_BATCH=24
+    PROFILE_TOTAL_BATCH=49_152
+    PROFILE_STAGE1_ITERS_DEFAULT=512
+    PROFILE_STAGE2_ITERS_DEFAULT=1024
+    PROFILE_BASELINE_ITERS_DEFAULT=512
+    PROFILE_EVAL_TOKENS_DEFAULT=49_152
+    ;;
+  *)
+    echo "Unsupported profile: $PROFILE" >&2
+    exit 1
+    ;;
+esac
+
+EVAL_TOKENS=${EVAL_TOKENS:-$PROFILE_EVAL_TOKENS_DEFAULT}
+STAGE1_ITERS=${STAGE1_ITERS:-$PROFILE_STAGE1_ITERS_DEFAULT}
+STAGE2_ITERS=${STAGE2_ITERS:-$PROFILE_STAGE2_ITERS_DEFAULT}
+BASELINE_ITERS=${BASELINE_ITERS:-$PROFILE_BASELINE_ITERS_DEFAULT}
 
 echo "[autotune] Eve sweep configuration:"
 echo "  profile          : $PROFILE"
@@ -131,6 +150,8 @@ run_trial() {
 
   WANDB_MODE=offline WANDB_RUN="autotune_${mode}_${run_id}" \
     bash run10.sh "${args[@]}" \
+    --device_batch_size="$PROFILE_DEVICE_BATCH" \
+    --total_batch_size="$PROFILE_TOTAL_BATCH" \
     --iters="$iters" \
     --eval_tokens="$EVAL_TOKENS" \
     "${eve_flags[@]}" \
