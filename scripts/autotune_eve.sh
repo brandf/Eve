@@ -18,9 +18,9 @@ BASELINE_DIR="$REPORT_ROOT/baseline"
 EVE_SUMMARY="$EVE_DIR/summary.tsv"
 BASELINE_SUMMARY="$BASELINE_DIR/summary.tsv"
 
-EVE_DEFAULT_BETA1=0.90
-EVE_DEFAULT_BETA2=0.9990
-EVE_DEFAULT_ETA=1.0
+EVE_DEFAULT_BETA1=0.67
+EVE_DEFAULT_BETA2=0.97
+EVE_DEFAULT_ETA=1.3
 
 usage() {
   cat <<EOF
@@ -148,7 +148,7 @@ run_trial() {
     eve_flags+=("--eve_beta1=$beta1" "--eve_beta2=$beta2" "--eve_eta=$eta")
   fi
 
-  WANDB_MODE=offline WANDB_RUN="autotune_${mode}_${run_id}" \
+  NO_REPORT=1 WANDB_MODE=offline WANDB_RUN="autotune_${mode}_${run_id}" \
     bash run10.sh "${args[@]}" \
     --device_batch_size="$PROFILE_DEVICE_BATCH" \
     --total_batch_size="$PROFILE_TOTAL_BATCH" \
@@ -186,9 +186,9 @@ run_trial() {
 if (( STAGE1_TRIALS > 0 )); then
   echo "[autotune] Stage 1 (Eve): random exploration with $STAGE1_TRIALS trials."
   for ((i=1;i<=STAGE1_TRIALS;i++)); do
-    beta1=$(random_float 0.85 0.95)
-    beta2=$(random_float 0.9985 0.9995)
-    eta=$(random_float 0.8 1.2)
+    beta1=$(random_float 0.55 0.85)
+    beta2=$(random_float 0.90 0.995)
+    eta=$(random_float 0.8 1.8)
     run_trial "eve" "stage1" "$i" "$beta1" "$beta2" "$eta" "$STAGE1_ITERS"
   done
 fi
@@ -202,22 +202,22 @@ if (( STAGE2_TRIALS > 0 )); then
   else
     echo "$best" | while IFS=$'\t' read -r stage trial beta1 beta2 eta _ _ _; do
       run_trial "eve" "stage2" "${trial}a" "$beta1" "$beta2" "$eta" "$STAGE2_ITERS"
-      beta1=$(python3 - "$beta1" <<'PY'
-import random, sys
-base = float(sys.argv[1])
-print(f"{base + random.uniform(-0.01, 0.01):.6f}")
-PY
-)
-      beta2=$(python3 - "$beta2" <<'PY'
-import random, sys
-base = float(sys.argv[1])
-print(f"{base + random.uniform(-1e-4, 1e-4):.6f}")
-PY
-)
-      eta=$(python3 - "$eta" <<'PY'
+    beta1=$(python3 - "$beta1" <<'PY'
 import random, sys
 base = float(sys.argv[1])
 print(f"{base + random.uniform(-0.05, 0.05):.6f}")
+PY
+)
+    beta2=$(python3 - "$beta2" <<'PY'
+import random, sys
+base = float(sys.argv[1])
+print(f"{base + random.uniform(-5e-3, 5e-3):.6f}")
+PY
+)
+    eta=$(python3 - "$eta" <<'PY'
+import random, sys
+base = float(sys.argv[1])
+print(f"{base + random.uniform(-0.3, 0.3):.6f}")
 PY
 )
       run_trial "eve" "stage2" "${trial}b" "$beta1" "$beta2" "$eta" "$STAGE2_ITERS"

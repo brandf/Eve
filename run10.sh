@@ -102,8 +102,10 @@ source .venv/bin/activate
 # Optional wandb logging
 export WANDB_RUN="${WANDB_RUN:-dummy}"
 
-# Fresh report
-python -m nanochat.report reset
+# Fresh report (skipped if NO_REPORT set)
+if [ "${NO_REPORT:-0}" != "1" ]; then
+  python -m nanochat.report reset
+fi
 
 # Rust tokenizer toolchain
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
@@ -154,6 +156,8 @@ torchrun --standalone --nproc_per_node=1 -m scripts.chat_sft -- \
 torchrun --standalone --nproc_per_node=1 -m scripts.chat_eval -- -i sft -a ARC-Easy|ARC-Challenge -x 100
 
 # Wrap up
-python -m nanochat.report generate
+if [ "${NO_REPORT:-0}" != "1" ]; then
+  python -m nanochat.report generate
+fi
 
 echo "run10 complete. Report available in report.md. Try: python -m scripts.chat_web"
