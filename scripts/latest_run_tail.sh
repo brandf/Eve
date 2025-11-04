@@ -15,4 +15,8 @@ fi
 
 echo "Monitoring $LOG_FILE"
 
+# Print existing validation lines first
+grep "Validation bpb" "$LOG_FILE" || true
+
+# Then follow new ones as they arrive
 tail -F "$LOG_FILE" | stdbuf -o0 grep --line-buffered "Validation bpb"
