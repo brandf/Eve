@@ -86,6 +86,8 @@ if [ -n "$OVERRIDE_TOTAL_BATCH" ]; then
   TOTAL_BATCH="$OVERRIDE_TOTAL_BATCH"
 fi
 
+DEFAULT_EVAL_TOKENS=$((DEVICE_BATCH * SEQ_LEN))
+
 EVE_ARGS=()
 if [ "$EVE_ENABLED" = true ]; then
   EVE_BETA1=${OVERRIDE_EVE_BETA1:-0.80}
@@ -144,7 +146,7 @@ torchrun --standalone --nproc_per_node=1 -m scripts.base_train -- \
     --device_batch_size="$DEVICE_BATCH" \
     --total_batch_size="$TOTAL_BATCH" \
     --num_iterations="${OVERRIDE_ITERS:-$DEFAULT_ITERS}" \
-    --eval_tokens="${OVERRIDE_EVAL_TOKENS:-32_768}" \
+    --eval_tokens="${OVERRIDE_EVAL_TOKENS:-$DEFAULT_EVAL_TOKENS}" \
     --log_every="$LOG_EVERY" \
     --eval_every="$EVAL_EVERY" \
     --core_metric_every=-1 \
