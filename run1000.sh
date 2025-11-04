@@ -21,7 +21,7 @@ done
 
 EVE_ARGS=()
 if [ "$EVE_ENABLED" = true ]; then
-  EVE_ARGS+=(--eve True)
+  EVE_ARGS+=(--eve=True)
   echo "Enabling Eve dynamics for this run"
 fi
 

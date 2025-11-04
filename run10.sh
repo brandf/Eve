@@ -58,7 +58,7 @@ fi
 
 EVE_ARGS=()
 if [ "$EVE_ENABLED" = true ]; then
-  EVE_ARGS+=(--eve True)
+  EVE_ARGS+=(--eve=True)
   [ -n "$OVERRIDE_EVE_BETA1" ] && EVE_ARGS+=("--eve_beta1=$OVERRIDE_EVE_BETA1")
   [ -n "$OVERRIDE_EVE_BETA2" ] && EVE_ARGS+=("--eve_beta2=$OVERRIDE_EVE_BETA2")
   [ -n "$OVERRIDE_EVE_ETA" ] && EVE_ARGS+=("--eve_eta=$OVERRIDE_EVE_ETA")
