@@ -12,14 +12,26 @@
 
 # Optional Eve dynamics toggle
 EVE_ENABLED=false
+OVERRIDE_EVE_BETA1=""
+OVERRIDE_EVE_BETA2=""
+OVERRIDE_EVE_ETA=""
 for arg in "$@"; do
   case "$arg" in
     eve)
       EVE_ENABLED=true
       ;;
+    --eve_beta1=*)
+      OVERRIDE_EVE_BETA1="${arg#*=}"
+      ;;
+    --eve_beta2=*)
+      OVERRIDE_EVE_BETA2="${arg#*=}"
+      ;;
+    --eve_eta=*)
+      OVERRIDE_EVE_ETA="${arg#*=}"
+      ;;
     *)
       echo "Unknown option: $arg" >&2
-      echo "Usage: bash speedrun.sh [eve]" >&2
+      echo "Usage: bash speedrun.sh [eve] [--eve_beta1=X] [--eve_beta2=Y] [--eve_eta=Z]" >&2
       exit 1
       ;;
   esac
@@ -27,7 +39,10 @@ done
 
 EVE_ARGS=()
 if [ "$EVE_ENABLED" = true ]; then
-  EVE_ARGS+=(--eve=True)
+  EVE_BETA1=${OVERRIDE_EVE_BETA1:-0.80}
+  EVE_BETA2=${OVERRIDE_EVE_BETA2:-0.91}
+  EVE_ETA=${OVERRIDE_EVE_ETA:-1.0}
+  EVE_ARGS+=(--eve=True "--eve_beta1=$EVE_BETA1" "--eve_beta2=$EVE_BETA2" "--eve_eta=$EVE_ETA")
   echo "Enabling Eve dynamics for this run"
 fi
 
