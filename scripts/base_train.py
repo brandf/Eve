@@ -58,6 +58,8 @@ eval_tokens = 20*524288 # number of tokens to evaluate val loss on
 core_metric_every = 2000 # every how many steps to evaluate the core metric (-1 = disable)
 core_metric_max_per_task = 500 # examples per task in estimating the core metric
 sample_every = 2000 # every how many steps to sample from the model
+log_every = 25 # every how many steps to log training status to stdout
+log_every = 25 # how often to print training status lines
 # Output
 model_tag = "" # optionally override the model tag for the output checkpoint directory name
 # Eve forward dynamics
@@ -313,7 +315,8 @@ for step in range(num_iterations + 1):
     mfu = 100 * flops_per_sec / promised_flops_per_sec_h100 # in %
     if step > 10:
         total_training_time += dt # only count the time after the first 10 steps
-    print0(f"step {step:05d}/{num_iterations:05d} ({pct_done:.2f}%) | loss: {debiased_smooth_loss:.6f} | lrm: {lrm:.2f} | dt: {dt * 1000:.2f}ms | tok/sec: {tok_per_sec:,} | mfu: {mfu:.2f} | total time: {total_training_time/60:.2f}m")
+    if step % 25 == 0 or step == num_iterations:
+        print0(f"step {step:05d}/{num_iterations:05d} ({pct_done:.2f}%) | loss: {debiased_smooth_loss:.6f} | lrm: {lrm:.2f} | dt: {dt * 1000:.2f}ms | tok/sec: {tok_per_sec:,} | mfu: {mfu:.2f} | total time: {total_training_time/60:.2f}m")
     if step % 100 == 0:
         wandb_run.log({
             "step": step,
