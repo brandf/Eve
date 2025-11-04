@@ -14,6 +14,8 @@ OVERRIDE_EVAL_TOKENS=""
 OVERRIDE_EVE_BETA1=""
 OVERRIDE_EVE_BETA2=""
 OVERRIDE_EVE_ETA=""
+OVERRIDE_DEVICE_BATCH=""
+OVERRIDE_TOTAL_BATCH=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -38,9 +40,15 @@ while [ $# -gt 0 ]; do
     --eve_eta=*)
       OVERRIDE_EVE_ETA="${1#*=}"
       ;;
+    --device_batch_size=*)
+      OVERRIDE_DEVICE_BATCH="${1#*=}"
+      ;;
+    --total_batch_size=*)
+      OVERRIDE_TOTAL_BATCH="${1#*=}"
+      ;;
     *)
       echo "Unknown option: $1" >&2
-      echo "Usage: bash run10.sh [h100|rtx5090] [eve] [--iters=N] [--eval_tokens=N] [--eve_beta1=X] [--eve_beta2=Y] [--eve_eta=Z]" >&2
+      echo "Usage: bash run10.sh [h100|rtx5090] [eve] [--iters=N] [--eval_tokens=N] [--eve_beta1=X] [--eve_beta2=Y] [--eve_eta=Z] [--device_batch_size=N] [--total_batch_size=N]" >&2
       exit 1
       ;;
   esac
@@ -48,14 +56,22 @@ while [ $# -gt 0 ]; do
 done
 
 SEQ_LEN=2048
-DEVICE_BATCH=40
+DEVICE_BATCH=48
 TOTAL_BATCH=98_304
 DEFAULT_ITERS=37_750
 
 if [ "$PROFILE" = "rtx5090" ]; then
-  DEVICE_BATCH=20           # tuned for 32GB RTX 5090
+  DEVICE_BATCH=24           # tuned for 32GB RTX 5090
   TOTAL_BATCH=49_152        # single microstep at 24 x 2048 tokens
   DEFAULT_ITERS=75_500
+fi
+
+if [ -n "$OVERRIDE_DEVICE_BATCH" ]; then
+  DEVICE_BATCH="$OVERRIDE_DEVICE_BATCH"
+fi
+
+if [ -n "$OVERRIDE_TOTAL_BATCH" ]; then
+  TOTAL_BATCH="$OVERRIDE_TOTAL_BATCH"
 fi
 
 EVE_ARGS=()
