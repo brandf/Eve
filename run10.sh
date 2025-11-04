@@ -48,12 +48,12 @@ while [ $# -gt 0 ]; do
 done
 
 SEQ_LEN=2048
-DEVICE_BATCH=48
+DEVICE_BATCH=40
 TOTAL_BATCH=98_304
 DEFAULT_ITERS=37_750
 
 if [ "$PROFILE" = "rtx5090" ]; then
-  DEVICE_BATCH=24           # tuned for 32GB RTX 5090
+  DEVICE_BATCH=20           # tuned for 32GB RTX 5090
   TOTAL_BATCH=49_152        # single microstep at 24 x 2048 tokens
   DEFAULT_ITERS=75_500
 fi
