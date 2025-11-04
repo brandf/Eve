@@ -87,6 +87,7 @@ if [ -n "$OVERRIDE_TOTAL_BATCH" ]; then
 fi
 
 DEFAULT_EVAL_TOKENS=$((DEVICE_BATCH * SEQ_LEN))
+BASE_LOSS_SPLIT_TOKENS=$((DEVICE_BATCH * SEQ_LEN * 160))
 
 EVE_ARGS=()
 if [ "$EVE_ENABLED" = true ]; then
@@ -154,7 +155,9 @@ torchrun --standalone --nproc_per_node=1 -m scripts.base_train -- \
     "${EVE_ARGS[@]}" \
     --run="$WANDB_RUN"
 
-torchrun --standalone --nproc_per_node=1 -m scripts.base_loss
+torchrun --standalone --nproc_per_node=1 -m scripts.base_loss -- \
+    --device_batch_size="$DEVICE_BATCH" \
+    --split_tokens="$BASE_LOSS_SPLIT_TOKENS"
 torchrun --standalone --nproc_per_node=1 -m scripts.base_eval -- --max-per-task=64
 
 # Midtraining for conversational format/tooling
