@@ -16,6 +16,9 @@ OVERRIDE_EVE_BETA2=""
 OVERRIDE_EVE_ETA=""
 OVERRIDE_DEVICE_BATCH=""
 OVERRIDE_TOTAL_BATCH=""
+OVERRIDE_LOG_EVERY=""
+OVERRIDE_EVAL_EVERY=""
+OVERRIDE_SAMPLE_EVERY=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -45,6 +48,15 @@ while [ $# -gt 0 ]; do
       ;;
     --total_batch_size=*)
       OVERRIDE_TOTAL_BATCH="${1#*=}"
+      ;;
+    --log_every=*)
+      OVERRIDE_LOG_EVERY="${1#*=}"
+      ;;
+    --eval_every=*)
+      OVERRIDE_EVAL_EVERY="${1#*=}"
+      ;;
+    --sample_every=*)
+      OVERRIDE_SAMPLE_EVERY="${1#*=}"
       ;;
     *)
       echo "Unknown option: $1" >&2
@@ -81,6 +93,10 @@ if [ "$EVE_ENABLED" = true ]; then
   EVE_ETA=${OVERRIDE_EVE_ETA:-1.0}
   EVE_ARGS+=(--eve=True "--eve_beta1=$EVE_BETA1" "--eve_beta2=$EVE_BETA2" "--eve_eta=$EVE_ETA")
 fi
+
+LOG_EVERY=${OVERRIDE_LOG_EVERY:-25}
+EVAL_EVERY=${OVERRIDE_EVAL_EVERY:-250}
+SAMPLE_EVERY=${OVERRIDE_SAMPLE_EVERY:-0}
 
 echo "Running run10 profile: $PROFILE"
 echo "  device_batch_size = $DEVICE_BATCH"
@@ -129,8 +145,10 @@ torchrun --standalone --nproc_per_node=1 -m scripts.base_train -- \
     --total_batch_size="$TOTAL_BATCH" \
     --num_iterations="${OVERRIDE_ITERS:-$DEFAULT_ITERS}" \
     --eval_tokens="${OVERRIDE_EVAL_TOKENS:-32_768}" \
+    --log_every="$LOG_EVERY" \
+    --eval_every="$EVAL_EVERY" \
     --core_metric_every=-1 \
-    --sample_every=-1 \
+    --sample_every="$SAMPLE_EVERY" \
     "${EVE_ARGS[@]}" \
     --run="$WANDB_RUN"
 

@@ -233,7 +233,15 @@ for step in range(num_iterations + 1):
 
     # once in a while: sample from the model (only on master process)
     # use the original uncompiled model because the inputs keep changing shape
-    if master_process and (last_step or (step > 0 and step % sample_every == 0)):
+    should_sample = False
+    if master_process:
+        if sample_every > 0:
+            should_sample = last_step or (step > 0 and step % sample_every == 0)
+        else:
+            # When sampling is disabled (<=0), piggy-back on validation cadence
+            should_sample = last_step or (step > 0 and step % eval_every == 0)
+
+    if should_sample:
         model.eval()
         prompts = [
             "The capital of France is",
