@@ -129,7 +129,7 @@ run_trial() {
     eve_flags+=("--eve_beta1=$beta1" "--eve_beta2=$beta2" "--eve_eta=$eta")
   fi
 
-  WANDB_RUN="autotune_${mode}_${run_id}" \
+  WANDB_MODE=offline WANDB_RUN="autotune_${mode}_${run_id}" \
     bash run10.sh "${args[@]}" \
     --iters="$iters" \
     --eval_tokens="$EVAL_TOKENS" \
