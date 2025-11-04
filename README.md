@@ -1,5 +1,7 @@
 # Eve
 
+![Eve logo](obsidian/images/eve_logo.png)
+
 > Eve is to inference what Adam is to training.
 
 **Eve** is an LLM architectural concept that reimagines transformer layer updates as an **adaptive, momentum-driven integration process**—analogous to the Adam optimizer, but applied to **hidden-state evolution through depth** rather than to weight updates through time.
@@ -23,8 +25,10 @@ For the best editing/contributing experience, use the Obsidian client - open the
 
 # License
 
-MIT [License](./LICENSE). PRs welcome.
+MIT [License](./LICENSE). 
 
+
+This is a fork of nanochat.
 ---
 
 # nanochat
