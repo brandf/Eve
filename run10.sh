@@ -6,6 +6,7 @@
 set -euo pipefail
 
 export UV_HTTP_TIMEOUT=600   # seconds
+export PYTORCH_CUDA_ALLOC_CONF=${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}
 
 PROFILE="h100"
 EVE_ENABLED=false
